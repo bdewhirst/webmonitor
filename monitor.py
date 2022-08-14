@@ -1,43 +1,34 @@
-import requests
 import os
-from bs4 import BeautifulSoup
-from twilio.rest import Client
-import yagmail
 import time
 import logging
+import winsound
 
-URL_TO_MONITOR = ""  # change this to the URL you want to monitor
-DELAY_TIME = 15  # seconds
-
-TWILIO_ACCOUNT_SID = ""  # replace with your Account SID
-TWILIO_AUTH_TOKEN = ""  # replace with your Auth Token
-TWILIO_PHONE_SENDER = (
-    "+12345678901"  # replace with the phone number you registered in twilio
-)
-TWILIO_PHONE_RECIPIENT = "+12345678901"  # replace with your phone number
-
-SENDING_EMAIL_USERNAME = ""  # replace with the username of the gmail account you created (e.g. "john.webmonitor" if the email is "john.webmonitor@gmail.com")
-SENDING_EMAIL_PASSWORD = (
-    ""  # replace with the password of the gmail account you created
-)
-RECIPIENT_EMAIL_ADDRESS = (
-    ""  # replace with the email address that will receive the notification
-)
+import requests
+from bs4 import BeautifulSoup
+# from twilio.rest import Client
+# import yagmail
 
 
-def send_email_alert(alert_str):
-    """Sends an email alert. The subject and body will be the same."""
-    yagmail.SMTP(SENDING_EMAIL_USERNAME, SENDING_EMAIL_PASSWORD).send(
-        RECIPIENT_EMAIL_ADDRESS, alert_str, alert_str
-    )
+import local_constants as c
 
 
-def send_text_alert(alert_str):
-    """Sends an SMS text alert."""
-    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    message = client.messages.create(
-        to=TWILIO_PHONE_RECIPIENT, from_=TWILIO_PHONE_SENDER, body=alert_str
-    )
+# def send_email_alert(alert_str):
+#     """Sends an email alert. The subject and body will be the same."""
+#     yagmail.SMTP(c.SENDING_EMAIL_USERNAME, c.SENDING_EMAIL_PASSWORD).send(
+#         c.RECIPIENT_EMAIL_ADDRESS, alert_str, alert_str
+#     )
+
+
+# def send_text_alert(alert_str):
+#     """Sends an SMS text alert."""
+#     client = Client(c.TWILIO_ACCOUNT_SID, c.TWILIO_AUTH_TOKEN)
+#     message = client.messages.create(
+#         to=c.TWILIO_PHONE_RECIPIENT, from_=c.TWILIO_PHONE_SENDER, body=alert_str
+#     )
+
+def do_beep():
+    """make several 'beep' noises, assuming a PyCharm framework"""
+    winsound.Beep(frequency=700, duration=2000)
 
 
 def process_html(string):
@@ -58,52 +49,60 @@ def process_html(string):
     return str(soup).replace("\r", "")
 
 
-def webpage_was_changed():
+def first_page_cache(filename: str, contents: str) -> None:
+    """Save the initial state of the web page to be monitored"""
+    text_file = open(filename, "w+", encoding="utf-8")
+    text_file.write(contents)
+    text_file.close()
+
+
+def webpage_was_changed(filename: str):
     """Returns true if the webpage was changed, otherwise false."""
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36",
         "Pragma": "no-cache",
         "Cache-Control": "no-cache",
     }
-    response = requests.get(URL_TO_MONITOR, headers=headers)
+    response = requests.get(c.URL_TO_MONITOR, headers=headers)
+    processed_response_html = process_html(response.text)
 
-    # create the previous_content.txt if it doesn't exist
-    if not os.path.exists("previous_content.txt"):
-        open("previous_content.txt", "w+").close()
+    # create the text file specified by filename, which will store the initial state of the page
+    if not os.path.exists(filename):
+        first_page_cache(filename=filename, contents=processed_response_html)
 
-    filehandle = open("previous_content.txt", "r")
+    filehandle = open(filename, "r", encoding="utf-8")
     previous_response_html = filehandle.read()
     filehandle.close()
 
-    processed_response_html = process_html(response.text)
-
-    if processed_response_html == previous_response_html:
-        return False
-    else:
-        filehandle = open("previous_content.txt", "w")
-        filehandle.write(processed_response_html)
-        filehandle.close()
-        return True
+    is_same =(processed_response_html == previous_response_html)
+    return not is_same
 
 
-def main():
+def main(filename: str):
     log = logging.getLogger(__name__)
     logging.basicConfig(
         level=os.environ.get("LOGLEVEL", "INFO"), format="%(asctime)s %(message)s"
     )
     log.info("Running Website Monitor")
+
+    if os.path.exists(filename):
+        os.remove(filename)
+        log.info("file deleted for initialization")
+
     while True:
         try:
-            if webpage_was_changed():
+            if webpage_was_changed(filename=filename):
                 log.info("WEBPAGE WAS CHANGED.")
-                send_text_alert(f"URGENT! {URL_TO_MONITOR} WAS CHANGED!")
-                send_email_alert(f"URGENT! {URL_TO_MONITOR} WAS CHANGED!")
+                do_beep()
+                # send_text_alert(f"URGENT! {c.URL_TO_MONITOR} WAS CHANGED!")
+                # send_email_alert(f"URGENT! {c.URL_TO_MONITOR} WAS CHANGED!")
+                return None
             else:
                 log.info("Webpage was not changed.")
         except:
             log.info("Error checking website.")
-        time.sleep(DELAY_TIME)
+        time.sleep(c.DELAY_TIME)
 
 
 if __name__ == "__main__":
-    main()
+    main(filename=c.FILENAME)

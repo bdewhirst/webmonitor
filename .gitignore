@@ -2,6 +2,10 @@
 .idea/*
 google_credential.json
 *.csv
+*.txt
+
+# local config stuff to ignore
+local_constants.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
