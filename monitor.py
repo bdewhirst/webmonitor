@@ -4,9 +4,11 @@ import logging
 import winsound
 
 import requests
-from bs4 import BeautifulSoup
+
 # from twilio.rest import Client
 # import yagmail
+
+from web_utils import process_html, HEADERS
 
 
 import local_constants as c
@@ -26,27 +28,10 @@ import local_constants as c
 #         to=c.TWILIO_PHONE_RECIPIENT, from_=c.TWILIO_PHONE_SENDER, body=alert_str
 #     )
 
+
 def do_beep():
     """make several 'beep' noises, assuming a PyCharm framework"""
     winsound.Beep(frequency=700, duration=2000)
-
-
-def process_html(string):
-    soup = BeautifulSoup(string, features="lxml")
-
-    # make the html look good
-    soup.prettify()
-
-    # remove script tags
-    for s in soup.select("script"):
-        s.extract()
-
-    # remove meta tags
-    for s in soup.select("meta"):
-        s.extract()
-
-    # convert to a string, remove '\r', and return
-    return str(soup).replace("\r", "")
 
 
 def first_page_cache(filename: str, contents: str) -> None:
@@ -58,12 +43,7 @@ def first_page_cache(filename: str, contents: str) -> None:
 
 def webpage_was_changed(filename: str):
     """Returns true if the webpage was changed, otherwise false."""
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36",
-        "Pragma": "no-cache",
-        "Cache-Control": "no-cache",
-    }
-    response = requests.get(c.URL_TO_MONITOR, headers=headers)
+    response = requests.get(c.URL_TO_MONITOR, headers=HEADERS)
     processed_response_html = process_html(response.text)
 
     # create the text file specified by filename, which will store the initial state of the page
@@ -74,7 +54,7 @@ def webpage_was_changed(filename: str):
     previous_response_html = filehandle.read()
     filehandle.close()
 
-    is_same =(processed_response_html == previous_response_html)
+    is_same = processed_response_html == previous_response_html
     return not is_same
 
 
