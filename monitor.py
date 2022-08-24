@@ -8,7 +8,7 @@ import requests
 # from twilio.rest import Client
 # import yagmail
 
-from web_utils import process_html, HEADERS
+from web_utils import process_html, BASIC_HEADERS
 
 
 import local_constants as c
@@ -43,7 +43,7 @@ def first_page_cache(filename: str, contents: str) -> None:
 
 def webpage_was_changed(filename: str):
     """Returns true if the webpage was changed, otherwise false."""
-    response = requests.get(c.URL_TO_MONITOR, headers=HEADERS)
+    response = requests.get(c.URL_TO_MONITOR, headers=BASIC_HEADERS)
     processed_response_html = process_html(response.text)
 
     # create the text file specified by filename, which will store the initial state of the page
