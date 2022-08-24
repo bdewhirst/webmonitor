@@ -19,6 +19,7 @@ HEADERS: dict = {
     "Cache-Control": "no-cache",
 }
 
+
 def process_html(string):
     soup = BeautifulSoup(string, features="lxml")
 
@@ -41,3 +42,7 @@ def get_title(page: str) -> str:
     """
     Get everything in the title tag (<title>...</title>) and return it as a string
     """
+    soup = BeautifulSoup(page, "html.parser")
+    title = soup.find("title")
+    title_ = title.string
+    return title_

@@ -25,12 +25,13 @@ def get_info(url: str) -> dict:
     For a given url (represented as a string), get relevant youtube data and return results as a dict with url as key
     """
     response = requests.get(url, headers=HEADERS)
-    processed_response: str = process_html(response.text)
-    # processed_response has useful information-- just get the title (between <title> and </title>
-
-
-    stuff = []  # placeholder
-    vid: dict = {url: stuff}
+    # clean_response = process_html(response)
+    title: str = get_title(
+        page=response.text
+    )  # may want other info, this is a good proof of concept
+    vid: dict = {
+        url: title,
+    }  # placeholder
     return vid
 
 
@@ -41,7 +42,10 @@ def main(filename: str) -> None:
     lines_from_file = simple_looper(filename=filename)
     for line in lines_from_file:
         print(line)
-        get_info(url=line)
+        this_vid: dict = get_info(url=line)
+        print(this_vid)  # temp
+        # do stuff with it here,
+    # or here
 
 
 if __name__ == "__main__":
